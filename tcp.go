@@ -339,11 +339,40 @@ func (h *tcpServer) String() string {
 }
 
 func (s *tcpServer) serve(ln net.Listener, h Handler) {
+	var tempDelay time.Duration // how long to sleep on accept failure
+
 	for {
 		c, err := ln.Accept()
 		if err != nil {
+			select {
+			case <-s.exit:
+				return
+			default:
+			}
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				if tempDelay == 0 {
+					tempDelay = 5 * time.Millisecond
+				} else {
+					tempDelay *= 2
+				}
+				if max := 1 * time.Second; tempDelay > max {
+					tempDelay = max
+				}
+				if logger.V(logger.ErrorLevel) {
+					logger.Errorf("tcp: Accept error: %v; retrying in %v", err, tempDelay)
+				}
+				time.Sleep(tempDelay)
+				continue
+			}
+			if logger.V(logger.ErrorLevel) {
+				logger.Errorf("tcp: Accept error: %v", err)
+			}
+			return
+		}
+
+		if err != nil {
 			logger.Errorf("tcp: accept err: %v", err)
-			continue
+			return
 		}
 		go h.Serve(c)
 	}
