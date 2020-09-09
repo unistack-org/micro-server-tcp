@@ -5,6 +5,6 @@ go 1.13
 require (
 	github.com/unistack-org/micro-broker-memory v0.0.0-20200905101815-4594aa2807e9
 	github.com/unistack-org/micro-registry-memory v0.0.0-20200905064113-34be66be749f
-	github.com/unistack-org/micro/v3 v3.0.0-gamma.0.20200907122943-f1fde75567f0
+	github.com/unistack-org/micro/v3 v3.0.0-gamma.0.20200909212533-9ea3149b606e
 	golang.org/x/net v0.0.0-20200904194848-62affa334b73
 )

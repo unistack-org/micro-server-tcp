@@ -380,7 +380,7 @@ func (s *tcpServer) serve(ln net.Listener, h Handler) {
 
 func newServer(opts ...server.Option) server.Server {
 	return &tcpServer{
-		opts:        newOptions(opts...),
+		opts:        server.NewOptions(opts...),
 		exit:        make(chan chan error),
 		subscribers: make(map[*tcpSubscriber][]broker.Subscriber),
 	}
