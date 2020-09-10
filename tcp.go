@@ -280,6 +280,8 @@ func (h *tcpServer) Start() error {
 		return err
 	}
 
+	config := h.Options()
+
 	// register
 	if err = h.Register(); err != nil {
 		return err
@@ -308,10 +310,32 @@ func (h *tcpServer) Start() error {
 			select {
 			// register self on interval
 			case <-t.C:
-				if err := h.Register(); err != nil {
-					logger.Error("Server register error: ", err)
+				h.RLock()
+				registered := h.registered
+				h.RUnlock()
+				rerr := h.opts.RegisterCheck(h.opts.Context)
+				if rerr != nil && registered {
+					if logger.V(logger.ErrorLevel) {
+						logger.Errorf("Server %s-%s register check error: %s, deregister it", config.Name, config.Id, rerr)
+					}
+					// deregister self in case of error
+					if err := h.Deregister(); err != nil {
+						if logger.V(logger.ErrorLevel) {
+							logger.Errorf("Server %s-%s deregister error: %s", config.Name, config.Id, err)
+						}
+					}
+				} else if rerr != nil && !registered {
+					if logger.V(logger.ErrorLevel) {
+						logger.Errorf("Server %s-%s register check error: %s", config.Name, config.Id, rerr)
+					}
+					continue
 				}
-			// wait for exit
+				if err := h.Register(); err != nil {
+					if logger.V(logger.ErrorLevel) {
+						logger.Errorf("Server %s-%s register error: %s", config.Name, config.Id, err)
+					}
+				}
+				// wait for exit
 			case ch = <-h.exit:
 				break Loop
 			}
