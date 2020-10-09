@@ -16,6 +16,7 @@ import (
 	"github.com/unistack-org/micro/v3/logger"
 	"github.com/unistack-org/micro/v3/registry"
 	"github.com/unistack-org/micro/v3/server"
+	regutil "github.com/unistack-org/micro/v3/util/registry"
 	"golang.org/x/net/netutil"
 )
 
@@ -138,7 +139,12 @@ func (h *tcpServer) Register() error {
 	eps := h.hd.Endpoints()
 	h.Unlock()
 
-	service := serviceDef(opts)
+	service, err := regutil.NewService(h)
+	if err != nil {
+		return err
+	}
+	service.Metadata["protocol"] = "tcp"
+	service.Metadata["transport"] = "tcp"
 	service.Endpoints = eps
 
 	h.Lock()
@@ -204,7 +210,10 @@ func (h *tcpServer) Deregister() error {
 
 	logger.Infof("Deregistering node: %s", opts.Name+"-"+opts.Id)
 
-	service := serviceDef(opts)
+	service, err := regutil.NewService(h)
+	if err != nil {
+		return err
+	}
 	if err := opts.Registry.Deregister(service); err != nil {
 		return err
 	}
