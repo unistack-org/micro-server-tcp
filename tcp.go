@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
+	jsonrpc "github.com/unistack-org/micro-codec-jsonrpc"
+	protorpc "github.com/unistack-org/micro-codec-protorpc"
 	"github.com/unistack-org/micro/v3/broker"
 	"github.com/unistack-org/micro/v3/codec"
-	jsonrpc "github.com/unistack-org/micro/v3/codec/jsonrpc"
-	protorpc "github.com/unistack-org/micro/v3/codec/protorpc"
 	"github.com/unistack-org/micro/v3/logger"
 	"github.com/unistack-org/micro/v3/registry"
 	"github.com/unistack-org/micro/v3/server"
@@ -170,7 +170,7 @@ func (h *tcpServer) Register() error {
 		logger.Infof("Registering node: %s", opts.Name+"-"+opts.Id)
 	})
 
-	if err := opts.Registry.Register(service, rOpts...); err != nil {
+	if err := opts.Registry.Register(opts.Context, service, rOpts...); err != nil {
 		return err
 	}
 
@@ -217,7 +217,7 @@ func (h *tcpServer) Deregister() error {
 	if err != nil {
 		return err
 	}
-	if err := opts.Registry.Deregister(service); err != nil {
+	if err := opts.Registry.Deregister(opts.Context, service); err != nil {
 		return err
 	}
 
