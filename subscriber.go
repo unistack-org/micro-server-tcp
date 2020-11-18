@@ -80,15 +80,14 @@ func newSubscriber(topic string, sub interface{}, opts ...server.SubscriberOptio
 		}
 
 		handlers = append(handlers, h)
-
-		endpoints = append(endpoints, &registry.Endpoint{
-			Name:    "Func",
-			Request: registry.ExtractSubValue(typ),
-			Metadata: map[string]string{
-				"topic":      topic,
-				"subscriber": "true",
-			},
-		})
+		ep := &registry.Endpoint{
+			Name:     "Func",
+			Request:  registry.ExtractSubValue(typ),
+			Metadata: metadata.New(2),
+		}
+		ep.Metadata.Set("topic", topic)
+		ep.Metadata.Set("subscriber", "true")
+		endpoints = append(endpoints, ep)
 	} else {
 		hdlr := reflect.ValueOf(sub)
 		name := reflect.Indirect(hdlr).Type().Name()
@@ -108,15 +107,14 @@ func newSubscriber(topic string, sub interface{}, opts ...server.SubscriberOptio
 			}
 
 			handlers = append(handlers, h)
-
-			endpoints = append(endpoints, &registry.Endpoint{
-				Name:    name + "." + method.Name,
-				Request: registry.ExtractSubValue(method.Type),
-				Metadata: map[string]string{
-					"topic":      topic,
-					"subscriber": "true",
-				},
-			})
+			ep := &registry.Endpoint{
+				Name:     name + "." + method.Name,
+				Request:  registry.ExtractSubValue(method.Type),
+				Metadata: metadata.New(2),
+			}
+			ep.Metadata.Set("topic", topic)
+			ep.Metadata.Set("subscriber", "true")
+			endpoints = append(endpoints, ep)
 		}
 	}
 

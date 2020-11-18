@@ -75,13 +75,7 @@ func (h *tcpServer) Handle(handler server.Handler) error {
 }
 
 func (h *tcpServer) NewHandler(handler interface{}, opts ...server.HandlerOption) server.Handler {
-	options := server.HandlerOptions{
-		Metadata: make(map[string]map[string]string),
-	}
-
-	for _, o := range opts {
-		o(&options)
-	}
+	options := server.NewHandlerOptions(opts...)
 
 	var eps []*registry.Endpoint
 
