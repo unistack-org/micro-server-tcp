@@ -217,15 +217,13 @@ func (s *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) bro
 				req = req.Elem()
 			}
 
-			b := &buffer{bytes.NewBuffer(msg.Body)}
-			co := cf(b)
-			defer co.Close()
+			buf := bytes.NewBuffer(msg.Body)
 
-			if err := co.ReadHeader(&codec.Message{}, codec.Event); err != nil {
+			if err := cf.ReadHeader(buf, &codec.Message{}, codec.Event); err != nil {
 				return err
 			}
 
-			if err := co.ReadBody(req.Interface()); err != nil {
+			if err := cf.ReadBody(buf, req.Interface()); err != nil {
 				return err
 			}
 
@@ -258,7 +256,7 @@ func (s *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) bro
 					payload:     req.Interface(),
 					header:      msg.Header,
 					body:        msg.Body,
-					codec:       co,
+					codec:       cf,
 				})
 			}()
 		}

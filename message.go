@@ -11,7 +11,7 @@ type tcpMessage struct {
 	contentType string
 	header      metadata.Metadata
 	body        []byte
-	codec       codec.Reader
+	codec       codec.Codec
 }
 
 func (r *tcpMessage) Topic() string {
@@ -34,6 +34,6 @@ func (r *tcpMessage) Body() []byte {
 	return r.body
 }
 
-func (r *tcpMessage) Codec() codec.Reader {
+func (r *tcpMessage) Codec() codec.Codec {
 	return r.codec
 }

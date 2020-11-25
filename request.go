@@ -11,7 +11,7 @@ type tcpRequest struct {
 	contentType string
 	header      map[string]string
 	body        interface{}
-	codec       codec.Reader
+	codec       codec.Codec
 }
 
 func (r *tcpRequest) Service() string {
@@ -46,6 +46,6 @@ func (r *tcpRequest) Stream() bool {
 	return false
 }
 
-func (r *tcpRequest) Codec() codec.Reader {
+func (r *tcpRequest) Codec() codec.Codec {
 	return r.codec
 }
