@@ -158,7 +158,7 @@ func (h *tcpServer) Register() error {
 
 	if !registered {
 		if config.Logger.V(logger.InfoLevel) {
-			config.Logger.Info("Registry [%s] Registering node: %s", config.Registry.String(), service.Nodes[0].Id)
+			config.Logger.Infof(config.Context, "Registry [%s] Registering node: %s", config.Registry.String(), service.Nodes[0].Id)
 		}
 	}
 
@@ -194,7 +194,7 @@ func (h *tcpServer) Register() error {
 		opts = append(opts, broker.SubscribeAutoAck(sb.Options().AutoAck))
 
 		if config.Logger.V(logger.InfoLevel) {
-			config.Logger.Info("Subscribing to topic: %s", sb.Topic())
+			config.Logger.Infof(config.Context, "Subscribing to topic: %s", sb.Topic())
 		}
 
 		sub, err := config.Broker.Subscribe(subCtx, sb.Topic(), handler, opts...)
@@ -221,7 +221,7 @@ func (h *tcpServer) Deregister() error {
 	}
 
 	if config.Logger.V(logger.InfoLevel) {
-		config.Logger.Info("Deregistering node: %s", service.Nodes[0].Id)
+		config.Logger.Infof(config.Context, "Deregistering node: %s", service.Nodes[0].Id)
 	}
 
 	if err := server.DefaultDeregisterFunc(service, config); err != nil {
@@ -248,11 +248,11 @@ func (h *tcpServer) Deregister() error {
 			go func(s broker.Subscriber) {
 				defer wg.Done()
 				if config.Logger.V(logger.InfoLevel) {
-					config.Logger.Info("Unsubscribing from topic: %s", s.Topic())
+					config.Logger.Infof(config.Context, "Unsubscribing from topic: %s", s.Topic())
 				}
 				if err := s.Unsubscribe(subCtx); err != nil {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Error("Unsubscribing from topic: %s err: %v", s.Topic(), err)
+						config.Logger.Errorf(config.Context, "Unsubscribing from topic: %s err: %v", s.Topic(), err)
 					}
 				}
 			}(sub)
@@ -309,7 +309,7 @@ func (h *tcpServer) Start() error {
 	}
 
 	if config.Logger.V(logger.ErrorLevel) {
-		config.Logger.Info("Listening on %s", ts.Addr().String())
+		config.Logger.Infof(config.Context, "Listening on %s", ts.Addr().String())
 	}
 
 	h.Lock()
@@ -354,23 +354,23 @@ func (h *tcpServer) Start() error {
 				rerr := h.opts.RegisterCheck(h.opts.Context)
 				if rerr != nil && registered {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Error("Server %s-%s register check error: %s, deregister it", config.Name, config.Id, rerr)
+						config.Logger.Errorf(config.Context, "Server %s-%s register check error: %s, deregister it", config.Name, config.Id, rerr)
 					}
 					// deregister self in case of error
 					if err := h.Deregister(); err != nil {
 						if config.Logger.V(logger.ErrorLevel) {
-							config.Logger.Error("Server %s-%s deregister error: %s", config.Name, config.Id, err)
+							config.Logger.Errorf(config.Context, "Server %s-%s deregister error: %s", config.Name, config.Id, err)
 						}
 					}
 				} else if rerr != nil && !registered {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Error("Server %s-%s register check error: %s", config.Name, config.Id, rerr)
+						config.Logger.Errorf(config.Context, "Server %s-%s register check error: %s", config.Name, config.Id, rerr)
 					}
 					continue
 				}
 				if err := h.Register(); err != nil {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Error("Server %s-%s register error: %s", config.Name, config.Id, err)
+						config.Logger.Errorf(config.Context, "Server %s-%s register error: %s", config.Name, config.Id, err)
 					}
 				}
 				// wait for exit
@@ -423,19 +423,19 @@ func (s *tcpServer) serve(ln net.Listener, h Handler) {
 					tempDelay = max
 				}
 				if config.Logger.V(logger.ErrorLevel) {
-					config.Logger.Error("tcp: Accept error: %v; retrying in %v", err, tempDelay)
+					config.Logger.Errorf(config.Context, "tcp: Accept error: %v; retrying in %v", err, tempDelay)
 				}
 				time.Sleep(tempDelay)
 				continue
 			}
 			if config.Logger.V(logger.ErrorLevel) {
-				config.Logger.Error("tcp: Accept error: %v", err)
+				config.Logger.Error(config.Context, "tcp: Accept error: %v", err)
 			}
 			return
 		}
 
 		if err != nil {
-			config.Logger.Error("tcp: accept err: %v", err)
+			config.Logger.Error(config.Context, "tcp: accept err: %v", err)
 			return
 		}
 		go h.Serve(c)
