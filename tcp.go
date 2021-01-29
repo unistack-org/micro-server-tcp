@@ -12,7 +12,7 @@ import (
 	"github.com/unistack-org/micro/v3/broker"
 	"github.com/unistack-org/micro/v3/codec"
 	"github.com/unistack-org/micro/v3/logger"
-	"github.com/unistack-org/micro/v3/registry"
+	"github.com/unistack-org/micro/v3/register"
 	"github.com/unistack-org/micro/v3/server"
 	"golang.org/x/net/netutil"
 )
@@ -26,8 +26,8 @@ type tcpServer struct {
 	subscribers  map[*tcpSubscriber][]broker.Subscriber
 	// used for first registration
 	registered bool
-	// registry service instance
-	rsvc *registry.Service
+	// register service instance
+	rsvc *register.Service
 }
 
 func (h *tcpServer) newCodec(ct string) (codec.Codec, error) {
@@ -62,11 +62,11 @@ func (h *tcpServer) Handle(handler server.Handler) error {
 func (h *tcpServer) NewHandler(handler interface{}, opts ...server.HandlerOption) server.Handler {
 	options := server.NewHandlerOptions(opts...)
 
-	var eps []*registry.Endpoint
+	var eps []*register.Endpoint
 
 	if !options.Internal {
 		for name, metadata := range options.Metadata {
-			eps = append(eps, &registry.Endpoint{
+			eps = append(eps, &register.Endpoint{
 				Name:     name,
 				Metadata: metadata,
 			})
@@ -128,7 +128,7 @@ func (h *tcpServer) Register() error {
 		return nil
 	}
 
-	service, err := server.NewRegistryService(h)
+	service, err := server.NewRegisterService(h)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (h *tcpServer) Register() error {
 
 	if !registered {
 		if config.Logger.V(logger.InfoLevel) {
-			config.Logger.Infof(config.Context, "Registry [%s] Registering node: %s", config.Registry.String(), service.Nodes[0].Id)
+			config.Logger.Infof(config.Context, "Register [%s] Registering node: %s", config.Register.String(), service.Nodes[0].Id)
 		}
 	}
 
@@ -215,7 +215,7 @@ func (h *tcpServer) Deregister() error {
 	config := h.opts
 	h.Unlock()
 
-	service, err := server.NewRegistryService(h)
+	service, err := server.NewRegisterService(h)
 	if err != nil {
 		return err
 	}
@@ -396,8 +396,12 @@ func (h *tcpServer) Stop() error {
 	return <-ch
 }
 
-func (h *tcpServer) String() string {
+func (s *tcpServer) String() string {
 	return "tcp"
+}
+
+func (s *tcpServer) Name() string {
+	return s.opts.Name
 }
 
 func (s *tcpServer) serve(ln net.Listener, h Handler) {
@@ -442,14 +446,10 @@ func (s *tcpServer) serve(ln net.Listener, h Handler) {
 	}
 }
 
-func newServer(opts ...server.Option) server.Server {
+func NewServer(opts ...server.Option) server.Server {
 	return &tcpServer{
 		opts:        server.NewOptions(opts...),
 		exit:        make(chan chan error),
 		subscribers: make(map[*tcpSubscriber][]broker.Subscriber),
 	}
-}
-
-func NewServer(opts ...server.Option) server.Server {
-	return newServer(opts...)
 }

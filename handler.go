@@ -3,7 +3,7 @@ package tcp
 import (
 	"net"
 
-	"github.com/unistack-org/micro/v3/registry"
+	"github.com/unistack-org/micro/v3/register"
 	"github.com/unistack-org/micro/v3/server"
 )
 
@@ -13,7 +13,7 @@ type Handler interface {
 
 type tcpHandler struct {
 	opts       server.HandlerOptions
-	eps        []*registry.Endpoint
+	eps        []*register.Endpoint
 	hd         interface{}
 	maxMsgSize int
 }
@@ -26,7 +26,7 @@ func (h *tcpHandler) Handler() interface{} {
 	return h.hd
 }
 
-func (h *tcpHandler) Endpoints() []*registry.Endpoint {
+func (h *tcpHandler) Endpoints() []*register.Endpoint {
 	return h.eps
 }
 
