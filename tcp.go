@@ -26,6 +26,7 @@ type tcpServer struct {
 	subscribers  map[*tcpSubscriber][]broker.Subscriber
 	// used for first registration
 	registered bool
+	init       bool
 	// register service instance
 	rsvc *register.Service
 }
@@ -44,11 +45,37 @@ func (h *tcpServer) Options() server.Options {
 }
 
 func (h *tcpServer) Init(opts ...server.Option) error {
+	if len(opts) == 0 && h.init {
+		return nil
+	}
 	h.Lock()
 	for _, o := range opts {
 		o(&h.opts)
 	}
 	h.Unlock()
+
+	if err := h.opts.Register.Init(); err != nil {
+		return err
+	}
+	if err := h.opts.Broker.Init(); err != nil {
+		return err
+	}
+	if err := h.opts.Tracer.Init(); err != nil {
+		return err
+	}
+	if err := h.opts.Auth.Init(); err != nil {
+		return err
+	}
+	if err := h.opts.Logger.Init(); err != nil {
+		return err
+	}
+	if err := h.opts.Meter.Init(); err != nil {
+		return err
+	}
+	if err := h.opts.Transport.Init(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
