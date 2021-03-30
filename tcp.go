@@ -460,13 +460,13 @@ func (s *tcpServer) serve(ln net.Listener, h Handler) {
 				continue
 			}
 			if config.Logger.V(logger.ErrorLevel) {
-				config.Logger.Error(config.Context, "tcp: Accept error: %v", err)
+				config.Logger.Errorf(config.Context, "tcp: Accept error: %v", err)
 			}
 			return
 		}
 
 		if err != nil {
-			config.Logger.Error(config.Context, "tcp: accept err: %v", err)
+			config.Logger.Errorf(config.Context, "tcp: accept err: %v", err)
 			return
 		}
 		go h.Serve(c)
