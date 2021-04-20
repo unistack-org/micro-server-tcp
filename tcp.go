@@ -91,13 +91,11 @@ func (h *tcpServer) NewHandler(handler interface{}, opts ...server.HandlerOption
 
 	var eps []*register.Endpoint
 
-	if !options.Internal {
-		for name, metadata := range options.Metadata {
-			eps = append(eps, &register.Endpoint{
-				Name:     name,
-				Metadata: metadata,
-			})
-		}
+	for name, metadata := range options.Metadata {
+		eps = append(eps, &register.Endpoint{
+			Name:     name,
+			Metadata: metadata,
+		})
 	}
 
 	th := &tcpHandler{
@@ -167,9 +165,7 @@ func (h *tcpServer) Register() error {
 	var subscriberList []*tcpSubscriber
 	for e := range h.subscribers {
 		// Only advertise non internal subscribers
-		if !e.Options().Internal {
-			subscriberList = append(subscriberList, e)
-		}
+		subscriberList = append(subscriberList, e)
 	}
 	sort.Slice(subscriberList, func(i, j int) bool {
 		return subscriberList[i].topic > subscriberList[j].topic
