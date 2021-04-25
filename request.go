@@ -2,16 +2,20 @@ package tcp
 
 import (
 	"github.com/unistack-org/micro/v3/codec"
+	"github.com/unistack-org/micro/v3/metadata"
+	"github.com/unistack-org/micro/v3/server"
 )
 
+var _ server.Request = &tcpRequest{}
+
 type tcpRequest struct {
-	service     string
+	codec       codec.Codec
+	body        interface{}
+	header      map[string]string
 	method      string
 	endpoint    string
 	contentType string
-	header      map[string]string
-	body        interface{}
-	codec       codec.Codec
+	service     string
 }
 
 func (r *tcpRequest) Service() string {
@@ -30,7 +34,7 @@ func (r *tcpRequest) ContentType() string {
 	return r.contentType
 }
 
-func (r *tcpRequest) Header() map[string]string {
+func (r *tcpRequest) Header() metadata.Metadata {
 	return r.header
 }
 
