@@ -7,16 +7,16 @@ import (
 	"github.com/unistack-org/micro/v3/server"
 )
 
-var (
-	// DefaultMaxMsgSize define maximum message size that server can send
-	// or receive.  Default value is 8K
-	DefaultMaxMsgSize = 1024 * 8
-)
+// DefaultMaxMsgSize define maximum message size that server can send
+// or receive.  Default value is 8K
+var DefaultMaxMsgSize = 1024 * 8
 
-type maxMsgSizeKey struct{}
-type tlsAuth struct{}
-type maxConnKey struct{}
-type netListener struct{}
+type (
+	maxMsgSizeKey struct{}
+	tlsAuth       struct{}
+	maxConnKey    struct{}
+	netListener   struct{}
+)
 
 //
 // MaxMsgSize set the maximum message in bytes the server can receive and

@@ -13,8 +13,8 @@ type Handler interface {
 
 type tcpHandler struct {
 	opts       server.HandlerOptions
-	eps        []*register.Endpoint
 	hd         interface{}
+	eps        []*register.Endpoint
 	maxMsgSize int
 }
 

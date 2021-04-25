@@ -3,15 +3,18 @@ package tcp
 import (
 	"github.com/unistack-org/micro/v3/codec"
 	"github.com/unistack-org/micro/v3/metadata"
+	"github.com/unistack-org/micro/v3/server"
 )
 
+var _ server.Message = &tcpMessage{}
+
 type tcpMessage struct {
-	topic       string
 	payload     interface{}
-	contentType string
-	header      metadata.Metadata
-	body        []byte
 	codec       codec.Codec
+	header      metadata.Metadata
+	topic       string
+	contentType string
+	body        []byte
 }
 
 func (r *tcpMessage) Topic() string {

@@ -23,9 +23,9 @@ const (
 var typeOfError = reflect.TypeOf((*error)(nil)).Elem()
 
 type handler struct {
-	method  reflect.Value
 	reqType reflect.Type
 	ctxType reflect.Type
+	method  reflect.Value
 }
 
 type tcpSubscriber struct {
@@ -133,7 +133,8 @@ func validateSubscriber(sub server.Subscriber) error {
 	typ := reflect.TypeOf(sub.Subscriber())
 	var argType reflect.Type
 
-	if typ.Kind() == reflect.Func {
+	switch typ.Kind() {
+	case reflect.Func:
 		name := "Func"
 		switch typ.NumIn() {
 		case 2:
@@ -151,7 +152,7 @@ func validateSubscriber(sub server.Subscriber) error {
 		if returnType := typ.Out(0); returnType != typeOfError {
 			return fmt.Errorf("subscriber %v returns %v not error", name, returnType.String())
 		}
-	} else {
+	default:
 		hdlr := reflect.ValueOf(sub.Subscriber())
 		name := reflect.Indirect(hdlr).Type().Name()
 
@@ -192,12 +193,14 @@ func (s *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) bro
 			return err
 		}
 
-		hdr := make(map[string]string)
+		hdr := make(map[string]string, len(msg.Header)-1)
 		for k, v := range msg.Header {
+			if k == "Content-Type" {
+				continue
+			}
 			hdr[k] = v
 		}
-		delete(hdr, "Content-Type")
-		ctx := metadata.NewContext(context.Background(), hdr)
+		ctx := metadata.NewIncomingContext(context.Background(), hdr)
 
 		results := make(chan error, len(sb.handlers))
 
