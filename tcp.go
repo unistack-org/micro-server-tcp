@@ -179,7 +179,7 @@ func (h *tcpServer) Register() error {
 
 	if !registered {
 		if config.Logger.V(logger.InfoLevel) {
-			config.Logger.Infof(config.Context, "Register [%s] Registering node: %s", config.Register.String(), service.Nodes[0].Id)
+			config.Logger.Infof(config.Context, "Register [%s] Registering node: %s", config.Register.String(), service.Nodes[0].ID)
 		}
 	}
 
@@ -242,7 +242,7 @@ func (h *tcpServer) Deregister() error {
 	}
 
 	if config.Logger.V(logger.InfoLevel) {
-		config.Logger.Infof(config.Context, "Deregistering node: %s", service.Nodes[0].Id)
+		config.Logger.Infof(config.Context, "Deregistering node: %s", service.Nodes[0].ID)
 	}
 
 	if err := server.DefaultDeregisterFunc(service, config); err != nil {
@@ -379,23 +379,23 @@ func (h *tcpServer) Start() error {
 				// nolint: nestif
 				if rerr != nil && registered {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Errorf(config.Context, "Server %s-%s register check error: %s, deregister it", config.Name, config.Id, rerr)
+						config.Logger.Errorf(config.Context, "Server %s-%s register check error: %s, deregister it", config.Name, config.ID, rerr)
 					}
 					// deregister self in case of error
 					if err := h.Deregister(); err != nil {
 						if config.Logger.V(logger.ErrorLevel) {
-							config.Logger.Errorf(config.Context, "Server %s-%s deregister error: %s", config.Name, config.Id, err)
+							config.Logger.Errorf(config.Context, "Server %s-%s deregister error: %s", config.Name, config.ID, err)
 						}
 					}
 				} else if rerr != nil && !registered {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Errorf(config.Context, "Server %s-%s register check error: %s", config.Name, config.Id, rerr)
+						config.Logger.Errorf(config.Context, "Server %s-%s register check error: %s", config.Name, config.ID, rerr)
 					}
 					continue
 				}
 				if err := h.Register(); err != nil {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Errorf(config.Context, "Server %s-%s register error: %s", config.Name, config.Id, err)
+						config.Logger.Errorf(config.Context, "Server %s-%s register error: %s", config.Name, config.ID, err)
 					}
 				}
 				// wait for exit
