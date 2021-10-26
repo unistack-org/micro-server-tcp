@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 
-	"github.com/unistack-org/micro/v3/server"
+	"go.unistack.org/micro/v3/server"
 )
 
 // DefaultMaxMsgSize define maximum message size that server can send

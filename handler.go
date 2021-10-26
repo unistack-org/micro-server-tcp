@@ -3,8 +3,8 @@ package tcp
 import (
 	"net"
 
-	"github.com/unistack-org/micro/v3/register"
-	"github.com/unistack-org/micro/v3/server"
+	"go.unistack.org/micro/v3/register"
+	"go.unistack.org/micro/v3/server"
 )
 
 type Handler interface {

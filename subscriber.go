@@ -9,11 +9,11 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/unistack-org/micro/v3/broker"
-	"github.com/unistack-org/micro/v3/codec"
-	"github.com/unistack-org/micro/v3/metadata"
-	"github.com/unistack-org/micro/v3/register"
-	"github.com/unistack-org/micro/v3/server"
+	"go.unistack.org/micro/v3/broker"
+	"go.unistack.org/micro/v3/codec"
+	"go.unistack.org/micro/v3/metadata"
+	"go.unistack.org/micro/v3/register"
+	"go.unistack.org/micro/v3/server"
 )
 
 const (

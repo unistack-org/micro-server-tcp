@@ -1,5 +1,5 @@
 // Package tcp implements a go-micro.Server
-package tcp
+package tcp // import "go.unistack.org/micro-server-tcp/v3"
 
 import (
 	"crypto/tls"
@@ -9,11 +9,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/unistack-org/micro/v3/broker"
-	"github.com/unistack-org/micro/v3/codec"
-	"github.com/unistack-org/micro/v3/logger"
-	"github.com/unistack-org/micro/v3/register"
-	"github.com/unistack-org/micro/v3/server"
+	"go.unistack.org/micro/v3/broker"
+	"go.unistack.org/micro/v3/codec"
+	"go.unistack.org/micro/v3/logger"
+	"go.unistack.org/micro/v3/register"
+	"go.unistack.org/micro/v3/server"
 	"golang.org/x/net/netutil"
 )
 
