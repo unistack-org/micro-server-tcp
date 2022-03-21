@@ -239,7 +239,7 @@ func (s *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) bro
 					vals = append(vals, reflect.ValueOf(ctx))
 				}
 
-				vals = append(vals, reflect.ValueOf(msg.Payload()))
+				vals = append(vals, reflect.ValueOf(msg.Body()))
 
 				returnValues := handler.method.Call(vals)
 				if err := returnValues[0].Interface(); err != nil {
@@ -258,7 +258,6 @@ func (s *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) bro
 					contentType: ct,
 					payload:     req.Interface(),
 					header:      msg.Header,
-					body:        msg.Body,
 					codec:       cf,
 				})
 			}()
