@@ -60,9 +60,6 @@ func (h *tcpServer) Init(opts ...server.Option) error {
 	if err := h.opts.Tracer.Init(); err != nil {
 		return err
 	}
-	if err := h.opts.Auth.Init(); err != nil {
-		return err
-	}
 	if err := h.opts.Logger.Init(); err != nil {
 		return err
 	}
