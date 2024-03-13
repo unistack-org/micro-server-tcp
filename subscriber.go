@@ -184,11 +184,11 @@ func validateSubscriber(sub server.Subscriber) error {
 	return nil
 }
 
-func (s *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) broker.Handler {
+func (h *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) broker.Handler {
 	return func(p broker.Event) error {
 		msg := p.Message()
 		ct := msg.Header["Content-Type"]
-		cf, err := s.newCodec(ct)
+		cf, err := h.newCodec(ct)
 		if err != nil {
 			return err
 		}

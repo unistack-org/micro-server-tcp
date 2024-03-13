@@ -2,6 +2,7 @@
 package tcp // import "go.unistack.org/micro-server-tcp/v3"
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -14,6 +15,7 @@ import (
 	"go.unistack.org/micro/v3/logger"
 	"go.unistack.org/micro/v3/register"
 	"go.unistack.org/micro/v3/server"
+
 	"golang.org/x/net/netutil"
 )
 
@@ -401,6 +403,8 @@ func (h *tcpServer) Start() error {
 			}
 		}
 
+		h.gracefulStop()
+
 		ch <- ts.Close()
 
 		// deregister
@@ -420,6 +424,13 @@ func (h *tcpServer) Stop() error {
 	ch := make(chan error)
 	h.exit <- ch
 	return <-ch
+}
+
+func (h *tcpServer) gracefulStop() {
+	ctx, cancel := context.WithTimeout(context.Background(), h.opts.GracefulTimeout)
+	defer cancel()
+
+	h.opts.Wait.WaitContext(ctx)
 }
 
 func (h *tcpServer) String() string {
@@ -469,7 +480,12 @@ func (h *tcpServer) serve(ln net.Listener, hd Handler) {
 			config.Logger.Errorf(config.Context, "tcp: accept err: %v", err)
 			return
 		}
-		go hd.Serve(c)
+
+		h.opts.Wait.Add(1)
+		go func() {
+			hd.Serve(c)
+			h.opts.Wait.Done()
+		}()
 	}
 }
 
