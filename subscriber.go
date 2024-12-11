@@ -1,7 +1,6 @@
 package tcp
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"reflect"
@@ -10,8 +9,8 @@ import (
 	"unicode/utf8"
 
 	"go.unistack.org/micro/v3/broker"
-	"go.unistack.org/micro/v3/codec"
 	"go.unistack.org/micro/v3/metadata"
+	"go.unistack.org/micro/v3/options"
 	"go.unistack.org/micro/v3/register"
 	"go.unistack.org/micro/v3/server"
 )
@@ -184,7 +183,7 @@ func validateSubscriber(sub server.Subscriber) error {
 	return nil
 }
 
-func (s *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) broker.Handler {
+func (s *Server) createSubHandler(sb *tcpSubscriber, opts server.Options) broker.Handler {
 	return func(p broker.Event) error {
 		msg := p.Message()
 		ct := msg.Header["Content-Type"]
@@ -220,16 +219,6 @@ func (s *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) bro
 				req = req.Elem()
 			}
 
-			buf := bytes.NewBuffer(msg.Body)
-
-			if err := cf.ReadHeader(buf, &codec.Message{}, codec.Event); err != nil {
-				return err
-			}
-
-			if err := cf.ReadBody(buf, req.Interface()); err != nil {
-				return err
-			}
-
 			fn := func(ctx context.Context, msg server.Message) error {
 				var vals []reflect.Value
 				if sb.typ.Kind() != reflect.Func {
@@ -248,10 +237,11 @@ func (s *tcpServer) createSubHandler(sb *tcpSubscriber, opts server.Options) bro
 				return nil
 			}
 
-			for i := len(opts.SubWrappers); i > 0; i-- {
-				fn = opts.SubWrappers[i-1](fn)
-			}
-
+			opts.Hooks.EachNext(func(hook options.Hook) {
+				if h, ok := hook.(server.HookSubHandler); ok {
+					fn = h(fn)
+				}
+			})
 			go func() {
 				results <- fn(ctx, &tcpMessage{
 					topic:       sb.topic,

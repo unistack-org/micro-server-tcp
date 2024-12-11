@@ -7,6 +7,7 @@ import (
 	"net"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.unistack.org/micro/v3/broker"
@@ -17,31 +18,36 @@ import (
 	"golang.org/x/net/netutil"
 )
 
-type tcpServer struct {
+var _ server.Server = (*Server)(nil)
+
+type Server struct {
 	hd          server.Handler
 	rsvc        *register.Service
 	exit        chan chan error
 	subscribers map[*tcpSubscriber][]broker.Subscriber
 	opts        server.Options
 	sync.RWMutex
-	registered bool
-	init       bool
+	registered  bool
+	init        bool
+	stateLive   *atomic.Uint32
+	stateReady  *atomic.Uint32
+	stateHealth *atomic.Uint32
 }
 
-func (h *tcpServer) newCodec(ct string) (codec.Codec, error) {
+func (h *Server) newCodec(ct string) (codec.Codec, error) {
 	if cf, ok := h.opts.Codecs[ct]; ok {
 		return cf, nil
 	}
 	return nil, codec.ErrUnknownContentType
 }
 
-func (h *tcpServer) Options() server.Options {
+func (h *Server) Options() server.Options {
 	h.RLock()
 	defer h.RUnlock()
 	return h.opts
 }
 
-func (h *tcpServer) Init(opts ...server.Option) error {
+func (h *Server) Init(opts ...server.Option) error {
 	if len(opts) == 0 && h.init {
 		return nil
 	}
@@ -66,21 +72,18 @@ func (h *tcpServer) Init(opts ...server.Option) error {
 	if err := h.opts.Meter.Init(); err != nil {
 		return err
 	}
-	if err := h.opts.Transport.Init(); err != nil {
-		return err
-	}
 
 	return nil
 }
 
-func (h *tcpServer) Handle(handler server.Handler) error {
+func (h *Server) Handle(handler server.Handler) error {
 	h.Lock()
 	h.hd = handler
 	h.Unlock()
 	return nil
 }
 
-func (h *tcpServer) NewHandler(handler interface{}, opts ...server.HandlerOption) server.Handler {
+func (h *Server) NewHandler(handler interface{}, opts ...server.HandlerOption) server.Handler {
 	options := server.NewHandlerOptions(opts...)
 
 	eps := make([]*register.Endpoint, 0, len(options.Metadata))
@@ -104,11 +107,11 @@ func (h *tcpServer) NewHandler(handler interface{}, opts ...server.HandlerOption
 	return th
 }
 
-func (h *tcpServer) NewSubscriber(topic string, handler interface{}, opts ...server.SubscriberOption) server.Subscriber {
+func (h *Server) NewSubscriber(topic string, handler interface{}, opts ...server.SubscriberOption) server.Subscriber {
 	return newSubscriber(topic, handler, opts...)
 }
 
-func (h *tcpServer) Subscribe(sb server.Subscriber) error {
+func (h *Server) Subscribe(sb server.Subscriber) error {
 	sub, ok := sb.(*tcpSubscriber)
 	if !ok {
 		return fmt.Errorf("invalid subscriber: expected *tcpSubscriber")
@@ -131,7 +134,7 @@ func (h *tcpServer) Subscribe(sb server.Subscriber) error {
 	return nil
 }
 
-func (h *tcpServer) Register() error {
+func (h *Server) Register() error {
 	h.Lock()
 	config := h.opts
 	rsvc := h.rsvc
@@ -176,7 +179,7 @@ func (h *tcpServer) Register() error {
 
 	if !registered {
 		if config.Logger.V(logger.InfoLevel) {
-			config.Logger.Infof(config.Context, "Register [%s] Registering node: %s", config.Register.String(), service.Nodes[0].ID)
+			config.Logger.Info(config.Context, fmt.Sprintf("Register [%s] Registering node: %s", config.Register.String(), service.Nodes[0].ID))
 		}
 	}
 
@@ -212,7 +215,7 @@ func (h *tcpServer) Register() error {
 		opts = append(opts, broker.SubscribeAutoAck(sb.Options().AutoAck))
 
 		if config.Logger.V(logger.InfoLevel) {
-			config.Logger.Infof(config.Context, "Subscribing to topic: %s", sb.Topic())
+			config.Logger.Info(config.Context, "Subscribing to topic: "+sb.Topic())
 		}
 
 		sub, err := config.Broker.Subscribe(subCtx, sb.Topic(), handler, opts...)
@@ -228,7 +231,7 @@ func (h *tcpServer) Register() error {
 	return nil
 }
 
-func (h *tcpServer) Deregister() error {
+func (h *Server) Deregister() error {
 	h.Lock()
 	config := h.opts
 	h.Unlock()
@@ -239,7 +242,7 @@ func (h *tcpServer) Deregister() error {
 	}
 
 	if config.Logger.V(logger.InfoLevel) {
-		config.Logger.Infof(config.Context, "Deregistering node: %s", service.Nodes[0].ID)
+		config.Logger.Info(config.Context, "Deregistering node: "+service.Nodes[0].ID)
 	}
 
 	if err := server.DefaultDeregisterFunc(service, config); err != nil {
@@ -266,11 +269,11 @@ func (h *tcpServer) Deregister() error {
 			go func(s broker.Subscriber) {
 				defer wg.Done()
 				if config.Logger.V(logger.InfoLevel) {
-					config.Logger.Infof(config.Context, "Unsubscribing from topic: %s", s.Topic())
+					config.Logger.Info(config.Context, "Unsubscribing from topic: "+s.Topic())
 				}
 				if err := s.Unsubscribe(subCtx); err != nil {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Errorf(config.Context, "Unsubscribing from topic: %s err: %v", s.Topic(), err)
+						config.Logger.Error(config.Context, fmt.Sprintf("Unsubscribing from topic: %s error", s.Topic()), err)
 					}
 				}
 			}(sub)
@@ -283,7 +286,7 @@ func (h *tcpServer) Deregister() error {
 	return nil
 }
 
-func (h *tcpServer) getListener() net.Listener {
+func (h *Server) getListener() net.Listener {
 	if h.opts.Context == nil {
 		return nil
 	}
@@ -296,7 +299,7 @@ func (h *tcpServer) getListener() net.Listener {
 	return l
 }
 
-func (h *tcpServer) Start() error {
+func (h *Server) Start() error {
 	h.RLock()
 	config := h.opts
 	hd := h.hd.Handler()
@@ -330,7 +333,7 @@ func (h *tcpServer) Start() error {
 	}
 
 	if config.Logger.V(logger.ErrorLevel) {
-		config.Logger.Infof(config.Context, "Listening on %s", ts.Addr().String())
+		config.Logger.Info(config.Context, "Listening on "+ts.Addr().String())
 	}
 
 	h.Lock()
@@ -351,6 +354,9 @@ func (h *tcpServer) Start() error {
 		return fmt.Errorf("invalid handler %T", hd)
 	}
 	go h.serve(ts, handle)
+	h.stateLive.Store(1)
+	h.stateReady.Store(1)
+	h.stateHealth.Store(1)
 
 	go func() {
 		t := new(time.Ticker)
@@ -376,23 +382,23 @@ func (h *tcpServer) Start() error {
 				// nolint: nestif
 				if rerr != nil && registered {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Errorf(config.Context, "Server %s-%s register check error: %s, deregister it", config.Name, config.ID, rerr)
+						config.Logger.Error(config.Context, fmt.Sprintf("Server %s-%s register check error deregister it", config.Name, config.ID), rerr)
 					}
 					// deregister self in case of error
 					if err := h.Deregister(); err != nil {
 						if config.Logger.V(logger.ErrorLevel) {
-							config.Logger.Errorf(config.Context, "Server %s-%s deregister error: %s", config.Name, config.ID, err)
+							config.Logger.Error(config.Context, fmt.Sprintf("Server %s-%s deregister error", config.Name, config.ID), err)
 						}
 					}
 				} else if rerr != nil && !registered {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Errorf(config.Context, "Server %s-%s register check error: %s", config.Name, config.ID, rerr)
+						config.Logger.Error(config.Context, fmt.Sprintf("Server %s-%s register check error", config.Name, config.ID), rerr)
 					}
 					continue
 				}
 				if err := h.Register(); err != nil {
 					if config.Logger.V(logger.ErrorLevel) {
-						config.Logger.Errorf(config.Context, "Server %s-%s register error: %s", config.Name, config.ID, err)
+						config.Logger.Error(config.Context, fmt.Sprintf("Server %s-%s register error", config.Name, config.ID), err)
 					}
 				}
 				// wait for exit
@@ -403,34 +409,38 @@ func (h *tcpServer) Start() error {
 
 		ch <- ts.Close()
 
+		h.stateLive.Store(0)
+		h.stateReady.Store(0)
+		h.stateHealth.Store(0)
+
 		// deregister
 		if cerr := h.Deregister(); cerr != nil {
-			config.Logger.Errorf(config.Context, "Register deregister error: %v", cerr)
+			config.Logger.Error(config.Context, "Register deregister error", cerr)
 		}
 
 		if cerr := config.Broker.Disconnect(config.Context); cerr != nil {
-			config.Logger.Errorf(config.Context, "Broker disconnect error: %v", cerr)
+			config.Logger.Error(config.Context, "Broker disconnect error", cerr)
 		}
 	}()
 
 	return nil
 }
 
-func (h *tcpServer) Stop() error {
+func (h *Server) Stop() error {
 	ch := make(chan error)
 	h.exit <- ch
 	return <-ch
 }
 
-func (h *tcpServer) String() string {
+func (h *Server) String() string {
 	return "tcp"
 }
 
-func (h *tcpServer) Name() string {
+func (h *Server) Name() string {
 	return h.opts.Name
 }
 
-func (h *tcpServer) serve(ln net.Listener, hd Handler) {
+func (h *Server) serve(ln net.Listener, hd Handler) {
 	var tempDelay time.Duration // how long to sleep on accept failure
 	h.RLock()
 	config := h.opts
@@ -454,27 +464,42 @@ func (h *tcpServer) serve(ln net.Listener, hd Handler) {
 					tempDelay = max
 				}
 				if config.Logger.V(logger.ErrorLevel) {
-					config.Logger.Errorf(config.Context, "tcp: Accept error: %v; retrying in %v", err, tempDelay)
+					config.Logger.Error(config.Context, fmt.Sprintf("tcp: Accept error: %v; retrying in %v", err, tempDelay))
 				}
 				time.Sleep(tempDelay)
 				continue
 			}
 			if config.Logger.V(logger.ErrorLevel) {
-				config.Logger.Errorf(config.Context, "tcp: Accept error: %v", err)
+				config.Logger.Error(config.Context, "tcp: Accept error", err)
 			}
 			return
 		}
 
 		if err != nil {
-			config.Logger.Errorf(config.Context, "tcp: accept err: %v", err)
+			config.Logger.Error(config.Context, "tcp: accept error", err)
 			return
 		}
 		go hd.Serve(c)
 	}
 }
 
-func NewServer(opts ...server.Option) server.Server {
-	return &tcpServer{
+func (h *Server) Live() bool {
+	return h.stateLive.Load() == 1
+}
+
+func (h *Server) Ready() bool {
+	return h.stateReady.Load() == 1
+}
+
+func (h *Server) Health() bool {
+	return h.stateHealth.Load() == 1
+}
+
+func NewServer(opts ...server.Option) *Server {
+	return &Server{
+		stateLive:   &atomic.Uint32{},
+		stateReady:  &atomic.Uint32{},
+		stateHealth: &atomic.Uint32{},
 		opts:        server.NewOptions(opts...),
 		exit:        make(chan chan error),
 		subscribers: make(map[*tcpSubscriber][]broker.Subscriber),
