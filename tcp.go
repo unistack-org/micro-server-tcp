@@ -1,5 +1,5 @@
 // Package tcp implements a go-micro.Server
-package tcp // import "go.unistack.org/micro-server-tcp/v3"
+package tcp
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"go.unistack.org/micro/v3/logger"
 	"go.unistack.org/micro/v3/register"
 	"go.unistack.org/micro/v3/server"
-
+	msync "go.unistack.org/micro/v3/sync"
 	"golang.org/x/net/netutil"
 )
 
@@ -62,6 +62,9 @@ func (h *Server) Options() server.Options {
 }
 
 func (h *Server) Init(opts ...server.Option) error {
+	if h.opts.Wait == nil {
+		h.opts.Wait = msync.NewWaitGroup()
+	}
 	if len(opts) == 0 && h.init {
 		return nil
 	}
@@ -486,15 +489,14 @@ func (h *Server) serve(ln net.Listener, hd Handler) {
 			return
 		}
 
-		if err != nil {
-			config.Logger.Error(config.Context, "tcp: accept err", err)
-			return
+		if h.opts.Wait != nil {
+			h.opts.Wait.Add(1)
 		}
-
-		h.opts.Wait.Add(1)
 		go func() {
 			hd.Serve(c)
-			h.opts.Wait.Done()
+			if h.opts.Wait != nil {
+				h.opts.Wait.Done()
+			}
 		}()
 	}
 }
