@@ -3,7 +3,6 @@ package tcp
 import (
 	"net"
 
-	"go.unistack.org/micro/v3/register"
 	"go.unistack.org/micro/v3/server"
 )
 
@@ -14,7 +13,6 @@ type Handler interface {
 type tcpHandler struct {
 	opts       server.HandlerOptions
 	hd         interface{}
-	eps        []*register.Endpoint
 	maxMsgSize int
 }
 
@@ -24,10 +22,6 @@ func (h *tcpHandler) Name() string {
 
 func (h *tcpHandler) Handler() interface{} {
 	return h.hd
-}
-
-func (h *tcpHandler) Endpoints() []*register.Endpoint {
-	return h.eps
 }
 
 func (h *tcpHandler) Options() server.HandlerOptions {

@@ -11,7 +11,6 @@ import (
 	"go.unistack.org/micro/v3/broker"
 	"go.unistack.org/micro/v3/metadata"
 	"go.unistack.org/micro/v3/options"
-	"go.unistack.org/micro/v3/register"
 	"go.unistack.org/micro/v3/server"
 )
 
@@ -33,7 +32,6 @@ type tcpSubscriber struct {
 	typ        reflect.Type
 	subscriber interface{}
 	handlers   []*handler
-	endpoints  []*register.Endpoint
 	opts       server.SubscriberOptions
 }
 
@@ -62,7 +60,6 @@ func newSubscriber(topic string, sub interface{}, opts ...server.SubscriberOptio
 		o(&options)
 	}
 
-	var endpoints []*register.Endpoint
 	var handlers []*handler
 
 	if typ := reflect.TypeOf(sub); typ.Kind() == reflect.Func {
@@ -79,18 +76,7 @@ func newSubscriber(topic string, sub interface{}, opts ...server.SubscriberOptio
 		}
 
 		handlers = append(handlers, h)
-		ep := &register.Endpoint{
-			Name:     "Func",
-			Request:  register.ExtractSubValue(typ),
-			Metadata: metadata.New(2),
-		}
-		ep.Metadata.Set("topic", topic)
-		ep.Metadata.Set("subscriber", "true")
-		endpoints = append(endpoints, ep)
 	} else {
-		hdlr := reflect.ValueOf(sub)
-		name := reflect.Indirect(hdlr).Type().Name()
-
 		for m := 0; m < typ.NumMethod(); m++ {
 			method := typ.Method(m)
 			h := &handler{
@@ -106,14 +92,6 @@ func newSubscriber(topic string, sub interface{}, opts ...server.SubscriberOptio
 			}
 
 			handlers = append(handlers, h)
-			ep := &register.Endpoint{
-				Name:     name + "." + method.Name,
-				Request:  register.ExtractSubValue(method.Type),
-				Metadata: metadata.New(2),
-			}
-			ep.Metadata.Set("topic", topic)
-			ep.Metadata.Set("subscriber", "true")
-			endpoints = append(endpoints, ep)
 		}
 	}
 
@@ -123,7 +101,6 @@ func newSubscriber(topic string, sub interface{}, opts ...server.SubscriberOptio
 		topic:      topic,
 		subscriber: sub,
 		handlers:   handlers,
-		endpoints:  endpoints,
 		opts:       options,
 	}
 }
@@ -276,10 +253,6 @@ func (s *tcpSubscriber) Topic() string {
 
 func (s *tcpSubscriber) Subscriber() interface{} {
 	return s.subscriber
-}
-
-func (s *tcpSubscriber) Endpoints() []*register.Endpoint {
-	return s.endpoints
 }
 
 func (s *tcpSubscriber) Options() server.SubscriberOptions {

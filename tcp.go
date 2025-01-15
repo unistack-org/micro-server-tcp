@@ -100,16 +100,7 @@ func (h *Server) Handle(handler server.Handler) error {
 func (h *Server) NewHandler(handler interface{}, opts ...server.HandlerOption) server.Handler {
 	options := server.NewHandlerOptions(opts...)
 
-	eps := make([]*register.Endpoint, 0, len(options.Metadata))
-	for name, metadata := range options.Metadata {
-		eps = append(eps, &register.Endpoint{
-			Name:     name,
-			Metadata: metadata,
-		})
-	}
-
 	th := &tcpHandler{
-		eps:  eps,
 		hd:   handler,
 		opts: options,
 	}
@@ -152,7 +143,7 @@ func (h *Server) Register() error {
 	h.Lock()
 	config := h.opts
 	rsvc := h.rsvc
-	eps := h.hd.Endpoints()
+
 	h.Unlock()
 
 	// if service already filled, reuse it and return early
@@ -170,7 +161,6 @@ func (h *Server) Register() error {
 
 	service.Nodes[0].Metadata["protocol"] = "tcp"
 	service.Nodes[0].Metadata["transport"] = service.Nodes[0].Metadata["protocol"]
-	service.Endpoints = eps
 
 	h.Lock()
 
@@ -182,9 +172,7 @@ func (h *Server) Register() error {
 	sort.Slice(subscriberList, func(i, j int) bool {
 		return subscriberList[i].topic > subscriberList[j].topic
 	})
-	for _, e := range subscriberList {
-		service.Endpoints = append(service.Endpoints, e.Endpoints()...)
-	}
+
 	h.Unlock()
 
 	h.RLock()
