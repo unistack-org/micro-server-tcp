@@ -4,7 +4,7 @@ import (
 	"crypto/tls"
 	"net"
 
-	"go.unistack.org/micro/v3/server"
+	"go.unistack.org/micro/v4/server"
 )
 
 // DefaultMaxMsgSize define maximum message size that server can send
@@ -18,10 +18,8 @@ type (
 	netListener   struct{}
 )
 
-//
 // MaxMsgSize set the maximum message in bytes the server can receive and
 // send.  Default maximum message size is 8K
-//
 func MaxMsgSize(s int) server.Option {
 	return server.SetOption(maxMsgSizeKey{}, s)
 }

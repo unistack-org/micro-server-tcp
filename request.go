@@ -1,9 +1,9 @@
 package tcp
 
 import (
-	"go.unistack.org/micro/v3/codec"
-	"go.unistack.org/micro/v3/metadata"
-	"go.unistack.org/micro/v3/server"
+	"go.unistack.org/micro/v4/codec"
+	"go.unistack.org/micro/v4/metadata"
+	"go.unistack.org/micro/v4/server"
 )
 
 var _ server.Request = &tcpRequest{}
@@ -11,7 +11,7 @@ var _ server.Request = &tcpRequest{}
 type tcpRequest struct {
 	codec       codec.Codec
 	body        interface{}
-	header      map[string]string
+	header      metadata.Metadata
 	method      string
 	endpoint    string
 	contentType string
