@@ -5,7 +5,7 @@ go 1.22.0
 toolchain go1.23.4
 
 require (
-	go.unistack.org/micro/v3 v3.11.37
+	go.unistack.org/micro/v3 v3.11.43
 	golang.org/x/net v0.34.0
 )
 
