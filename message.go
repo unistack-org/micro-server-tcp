@@ -14,7 +14,7 @@ type tcpMessage struct {
 	header      metadata.Metadata
 	topic       string
 	contentType string
-	body        []byte
+	body        []byte //nolint:unused
 }
 
 func (r *tcpMessage) Topic() string {
