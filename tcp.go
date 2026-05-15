@@ -10,10 +10,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"go.unistack.org/micro/v4/logger"
-	"go.unistack.org/micro/v4/register"
-	"go.unistack.org/micro/v4/server"
-	msync "go.unistack.org/micro/v4/sync"
+	"go.unistack.org/micro/v5/logger"
+	"go.unistack.org/micro/v5/register"
+	"go.unistack.org/micro/v5/server"
+	msync "go.unistack.org/micro/v5/sync"
 	"golang.org/x/net/netutil"
 )
 
