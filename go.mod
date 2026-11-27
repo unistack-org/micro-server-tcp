@@ -1,10 +1,10 @@
 module go.unistack.org/micro-server-tcp/v5
 
-go 1.26
+go 1.26.0
 
 require (
 	go.unistack.org/micro/v5 v5.0.4
-	golang.org/x/net v0.58.0
+	golang.org/x/net v0.63.0
 )
 
 require (
